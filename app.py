@@ -1,5 +1,6 @@
 import sys
 from multiprocessing import freeze_support
+from threading import Thread
 from scrap import Scrapper
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -57,7 +58,21 @@ class Ui_MainWindow(object):
         self.console.clear()
         self.console.append('Скрипт запущен...')
         url = self.get_url()
-        Scrapper().scrap_page(url)
+
+        self.thread = QtCore.QThread()
+        self.worker = Worker(url)
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.worker.deleteLater)
+        self.thread.start()
+
+        self.button_collect_data.setEnabled(False)
+        self.thread.finished.connect(self.after_finished_thread)
+
+    def after_finished_thread(self):
+        self.button_collect_data.setEnabled(True)
         self.console.append('Выполнение скрипта завершено')
 
     def get_url(self):
@@ -75,8 +90,16 @@ class EmittingStream(QtCore.QObject):
         self.textWritten.emit(str(text))
 
 
-class InvalidUrl(BaseException):
-    pass
+class Worker(QtCore.QObject):
+    finished = QtCore.pyqtSignal()
+
+    def __init__(self, url):
+        super().__init__()
+        self.url = url
+
+    def run(self):
+        Scrapper().scrap_page(self.url)
+        self.finished.emit()
 
 
 if __name__ == "__main__":
