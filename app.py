@@ -1,5 +1,5 @@
-import time
 import sys
+from multiprocessing import freeze_support
 from scrap import Scrapper
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -87,6 +87,7 @@ class InvalidUrl(BaseException):
 
 
 if __name__ == "__main__":
+    freeze_support()
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
