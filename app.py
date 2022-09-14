@@ -1,4 +1,5 @@
 import time
+import sys
 from scrap import Scrapper
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -50,11 +51,12 @@ class Ui_MainWindow(object):
         self.button_collect_data.setText(_translate("MainWindow", "Пуск"))
 
     def add_functions(self):
-        self.button_collect_data.clicked.connect(lambda: self.run_collect_data())
+        self.button_collect_data.clicked.connect(self.run_collect_data)
 
     def run_collect_data(self):
         self.console.clear()
         self.console.append('Скрипт запущен...')
+        app.processEvents()
         url = self.get_url()
         Scrapper().scrap_page(url)
         self.console.append('Выполнение скрипта завершено')
@@ -85,7 +87,6 @@ class InvalidUrl(BaseException):
 
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
