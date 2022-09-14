@@ -41,7 +41,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        sys.stdout = EmittingStream(self.console.append)
         self.add_functions()
 
     def retranslateUi(self, MainWindow):
@@ -56,7 +56,6 @@ class Ui_MainWindow(object):
     def run_collect_data(self):
         self.console.clear()
         self.console.append('Скрипт запущен...')
-        app.processEvents()
         url = self.get_url()
         Scrapper().scrap_page(url)
         self.console.append('Выполнение скрипта завершено')
@@ -64,15 +63,6 @@ class Ui_MainWindow(object):
     def get_url(self):
         text = self.input_url.text()
         return text
-
-    def normalOutputWritten(self, text):
-        """Append text to the QTextEdit."""
-        # Maybe QTextEdit.append() works as well, but this is how I do it:
-        cursor = self.console.textCursor()
-        cursor.movePosition(QtGui.QTextCursor.End)
-        cursor.insertText(text)
-        self.console.setTextCursor(cursor)
-        self.console.ensureCursorVisible()
 
 
 class EmittingStream(QtCore.QObject):
