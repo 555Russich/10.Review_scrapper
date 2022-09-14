@@ -41,7 +41,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        sys.stdout = EmittingStream(self.console.append)
+        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
         self.add_functions()
 
     def retranslateUi(self, MainWindow):
@@ -63,6 +63,9 @@ class Ui_MainWindow(object):
     def get_url(self):
         text = self.input_url.text()
         return text
+
+    def normalOutputWritten(self, text):
+        self.console.append(text)
 
 
 class EmittingStream(QtCore.QObject):
