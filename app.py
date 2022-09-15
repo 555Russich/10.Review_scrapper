@@ -56,9 +56,13 @@ class Ui_MainWindow(object):
 
     def run_collect_data(self):
         self.console.clear()
-        self.console.append('Скрипт запущен...')
-        url = self.get_url()
+        try:
+            url = self.get_url()
+        except InvalidUrl as err:
+            print(str(err))
+            return
 
+        self.console.append('Скрипт запущен...')
         self.thread = QtCore.QThread()
         self.worker = Worker(url)
         self.worker.moveToThread(self.thread)
@@ -76,8 +80,32 @@ class Ui_MainWindow(object):
         self.console.append('Выполнение скрипта завершено')
 
     def get_url(self):
-        text = self.input_url.text()
-        return text
+        values = self.input_url.text().split('/')
+        match values:
+            case scheme, _, domain, *args:
+                match scheme:
+                    case 'https:' | 'http:':
+                        pass
+                    case _:
+                        raise InvalidUrl('Некорректный URL')
+
+                match domain.split('.'):
+                    case _, website, _:
+                        match website:
+                            case 'booking':
+                                pass
+                            case _:
+                                raise InvalidUrl('Данный сайт не поддерживается')
+                    case _:
+                        raise InvalidUrl('Некорректный URL')
+
+                match args:
+                    case ['']:
+                        raise InvalidUrl('Некорректный URL')
+            case _:
+                raise InvalidUrl('Некорректный URL')
+
+        return self.input_url.text()
 
     def normalOutputWritten(self, text):
         self.console.append(text)
@@ -100,6 +128,10 @@ class Worker(QtCore.QObject):
     def run(self):
         Scrapper().scrap_page(self.url)
         self.finished.emit()
+
+
+class InvalidUrl(Exception):
+    pass
 
 
 if __name__ == "__main__":
