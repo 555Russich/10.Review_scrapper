@@ -99,7 +99,6 @@ class Scrapper:
             text_input = self.driver.find_element(By.XPATH, '//textarea[@aria-label="Исходный текст"]')
             text_input.clear()
             sleep(1)
-            # text_input.send_keys(text)
             js_add_text_to_input = """
               var elm = arguments[0], txt = arguments[1];
               elm.value += txt;
@@ -111,7 +110,6 @@ class Scrapper:
             text_output = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, '//span[@lang="ru"]/span/span'))
             ).text
-            # self.driver.find_element(By.XPATH, '//span[@lang="ru"]/span/span').text
             self.driver.switch_to.window(og_tab)
             print(f'Текст: "{text}" переведен как: "{text_output}"')
             return text_output
@@ -132,6 +130,7 @@ class Scrapper:
                 pass
 
             self.driver.find_element(By.XPATH, '//div[@class="hp-featured_reviews-bottom"]/button').click()
+            counter = 0
             reviews_info = {url: {}}
             while True:
                 # wait until loading finished
@@ -145,13 +144,16 @@ class Scrapper:
                         continue
                 sleep(1)
 
-                divs_reviews = self.driver.find_elements(
+                count_reviews_on_page = len(self.driver.find_elements(
                     By.XPATH, '//div[@class="c-review-block"]'
-                )
-                for div_review in divs_reviews:
+                ))
+                for i in range(1, count_reviews_on_page + 1):
                     nickname, date, review_title, review_info = None, None, None, None
                     positive, negative = '', ''
                     translated, translate_error = False, False
+                    div_review = self.driver.find_element(
+                        By.XPATH, f'(//div[@class="c-review-block"])[{i}]'
+                    )
                     ActionChains(self.driver).scroll_to_element(div_review).perform()
 
                     # Press translate button if it exists
@@ -226,6 +228,7 @@ class Scrapper:
                         if translate_error or not re.search(r'[А-я]', negative):
                             negative = self.translate_to_ru(negative)
 
+                    counter += 1
                     review_info = {
                         'author': nickname,
                         'date': date,
@@ -235,9 +238,9 @@ class Scrapper:
 
                     if negative or positive:
                         reviews_info[url][len(reviews_info[url]) + 1] = review_info
-                        print(len(reviews_info[url]), review_info)
+                        print(f'№: {counter}, {review_info}')
                     else:
-                        print('В отзыве отсутствуют негативные или положительные комментарии')
+                        print(f'№: {counter}, В отзыве отсутствуют негативные или положительные комментарии')
 
                 try:
                     self.driver.find_element(By.XPATH, '//a[@class="pagenext"]').click()
