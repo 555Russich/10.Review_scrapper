@@ -4,6 +4,7 @@ import os.path
 import re
 import traceback
 from time import sleep
+from subprocess import CREATE_NO_WINDOW
 
 import undetected_chromedriver.v2 as uc
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
@@ -50,10 +51,12 @@ class Scrapper:
         # maximized window
         options.add_argument('--start-maximized')
         options.add_argument('--disable-notifications')
+        chrome_service = Service(ChromeDriverManager().install())
+        chrome_service.creationflags = CREATE_NO_WINDOW
         driver = uc.Chrome(
             options=options,
             version_main=104,
-            service=Service(ChromeDriverManager().install())
+            service=chrome_service
         )
         self.driver = driver
 
