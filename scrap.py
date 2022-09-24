@@ -53,7 +53,6 @@ class Scrapper:
         chrome_service = Service(ChromeDriverManager().install())
         driver = uc.Chrome(
             options=options,
-            version_main=104,
             service=chrome_service
         )
         self.driver = driver
@@ -63,7 +62,6 @@ class Scrapper:
         while True:
             i += 1
             self.get_driver()
-            print(self.driver.service.creationflags)
             self.driver.set_page_load_timeout(self.page_load_time_out)
             try:
                 print(f'Страница загружается... {url=}')
