@@ -31,6 +31,7 @@ def append_dict_to_txt(reviews_info: dict, filepath='output.txt'):
                     f.write(f'type: {k}\nreview: {v}\n')
                 else:
                     f.write(f'{k}: {v}\n')
+    print('Данные записаны в файл')
 
 
 class Scrapper:
@@ -116,160 +117,178 @@ class Scrapper:
         except:
             return None
 
-    def scrap_page(self, url, filepath='output.txt'):
-        try:
-            create_txt(filepath)
-            self.get_page_with_retries(url, 3)
-            self.open_google_translate_tab()
-
-            # accept cookies
+    def scrap_page(self, url, max_retries=3, filepath='output.txt'):
+        retries = 0
+        while True:
+            retries += 1
             try:
-                self.driver.find_element(By.XPATH, '//button[@id="onetrust-accept-btn-handler"]').click()
-                sleep(1)
-            except NoSuchElementException:
-                pass
+                create_txt(filepath)
+                self.get_page_with_retries(url, 3)
+                self.open_google_translate_tab()
 
-            self.driver.find_element(By.XPATH, '//span[text()="Читать все отзывы"]/parent::button').click()
-            counter = 0
-            reviews_info = {url: {}}
-            while True:
-                # wait until loading finished
-                while True:
-                    try:
-                        self.driver.find_element(
-                            By.XPATH, '//div[@id="review_list_page_container"][@style="display: block;"]'
-                        )
-                        break
-                    except NoSuchElementException:
-                        continue
-                sleep(1)
-
-                count_reviews_on_page = len(self.driver.find_elements(
-                    By.XPATH, '//div[@class="c-review-block"]'
-                ))
-                for i in range(1, count_reviews_on_page + 1):
-                    nickname, date, review_title, review_info = None, None, None, None
-                    positive, negative = '', ''
-                    translated, translate_error = False, False
-                    div_review = self.driver.find_element(
-                        By.XPATH, f'(//div[@class="c-review-block"])[{i}]'
-                    )
-                    ActionChains(self.driver).scroll_to_element(div_review).perform()
-
-                    # Press translate button if it exists
-                    try:
-                        div_review.find_element(
-                            By.XPATH, './/a[text()="Показать перевод"]'
-                        ).click()
-                        while translated is False and translate_error is False:
-                            try:
-                                div_review.find_element(
-                                    By.XPATH, './/span[@style="display: inline;"]/'
-                                              'span[normalize-space(text())="Переведено"]'
-                                )
-                                translated = True
-                            except NoSuchElementException:
-                                pass
-                            try:
-                                div_review.find_element(
-                                    By.XPATH, './/span[@style="display: inline;"][contains(text(), "Не удалось перевести")]'
-                                )
-                                translate_error = True
-                            except NoSuchElementException:
-                                pass
-                    except NoSuchElementException:
-                        pass
-
-                    nickname = div_review.find_element(
-                        By.CLASS_NAME, 'bui-avatar-block__title'
-                    ).text
-                    date = div_review.find_element(
-                        By.XPATH, './/div[@class="c-review-block__row"]/span[@class="c-review-block__date"]'
-                    ).text.replace('Время отзыва: ', '')
-
-                    if not translate_error:
-                        positives = div_review.find_elements(
-                            By.XPATH, './/span[text()="Понравилось"]/parent::span/following-sibling::'
-                                      'span[contains(@class, "c-review__body")]'
-                        )
-                    else:
-                        positives = div_review.find_elements(
-                            By.XPATH, './/span[@class="c-review__prefix c-review__prefix--color-green"]'
-                                      '/following-sibling::span[@lang]'
-                        )
-                    match positives:
-                        case []:
-                            positive = ''
-                        case [arg]:
-                            positive = arg.text
-                        case [*args]:
-                            positive = [p for p in args if p.get_attribute('style') == 'display: inline;'][0].text
-                    if positive:
-                        if translate_error or not re.search(r'[А-я]', positive):
-                            positive = self.translate_to_ru(positive)
-
-                    if not translate_error:
-                        negatives = div_review.find_elements(
-                            By.XPATH, './/span[text()="Не понравилось"]/parent::span'
-                                      '/following-sibling::span[contains(@class, "c-review__body")]'
-                        )
-                    else:
-                        negatives = div_review.find_elements(
-                            By.XPATH, './/span[@class="c-review__prefix"]/following-sibling::span[@lang]'
-                        )
-                    match negatives:
-                        case []:
-                            negative = ''
-                        case [arg]:
-                            negative = arg.text
-                        case [*args]:
-                            negative = [p for p in args if p.get_attribute('style') == 'display: inline;'][0].text
-                    if negative:
-                        if translate_error or not re.search(r'[А-я]', negative):
-                            negative = self.translate_to_ru(negative)
-
-                    counter += 1
-                    review_info = {
-                        'author': nickname,
-                        'date': date,
-                        'positive': positive,
-                        'negative': negative
-                    }
-
-                    if negative or positive:
-                        reviews_info[url][len(reviews_info[url]) + 1] = review_info
-                        print(f'№: {counter}, {review_info}')
-                    else:
-                        print(f'№: {counter}, В отзыве отсутствуют негативные или положительные комментарии')
+                # accept cookies
+                try:
+                    self.driver.find_element(By.XPATH, '//button[@id="onetrust-accept-btn-handler"]').click()
+                    sleep(1)
+                except NoSuchElementException:
+                    pass
 
                 try:
-                    self.driver.find_element(By.XPATH, '//a[@class="pagenext"]').click()
+                    self.driver.find_element(
+                        By.XPATH, '//span[contains(text(), "Читать все отзывы")]/parent::button'
+                    ).click()
                 except NoSuchElementException:
-                    break
+                    self.driver.find_element(
+                        By.XPATH, '/html/body/div[3]/div/div[4]/div[1]/div[1]/div/div[18]/div/div[2]/div[9]/div/div/div/button'
+                    ).click()
+                counter = 0
+                reviews_info = {url: {}}
+                while True:
+                    # wait until loading finished
+                    while True:
+                        try:
+                            self.driver.find_element(
+                                By.XPATH, '//div[@id="review_list_page_container"][@style="display: block;"]'
+                            )
+                            break
+                        except NoSuchElementException:
+                            continue
+                    sleep(1)
 
-            append_dict_to_txt(reviews_info, filepath)
-            # with open('reviews_example.json', 'w') as f:
-            #     json.dump(reviews_info, f, indent=4, ensure_ascii=False)
+                    count_reviews_on_page = len(self.driver.find_elements(
+                        By.XPATH, '//div[@class="c-review-block"]'
+                    ))
+                    for i in range(1, count_reviews_on_page + 1):
+                        nickname, date, review_title, review_info = None, None, None, None
+                        positive, negative = '', ''
+                        translated, translate_error = False, False
+                        div_review = self.driver.find_element(
+                            By.XPATH, f'(//div[@class="c-review-block"])[{i}]'
+                        )
+                        ActionChains(self.driver).scroll_to_element(div_review).perform()
 
-            # columns = ('url', 'id', 'author', 'date', 'positive', 'negative')
-            # with open('reviews_example.csv', 'a', encoding='utf-8') as f:
-            #     writer = csv.writer(f, delimiter=';')
-            #     writer.writerow(columns)
-            #     for i, d in reviews_info[url].items():
-            #         if i == 1:
-            #             row_data = [url, i]
-            #         else:
-            #             row_data = [None, i]
-            #         for column in columns[2:]:
-            #             if v := d.get(column):
-            #                 row_data.append(v)
-            #             else:
-            #                 row_data.append(None)
-            #         writer.writerow(row_data)
-        except:
-            print(traceback.format_exc())
-        finally:
-            self.driver.quit()
+                        # Press translate button if it exists
+                        try:
+                            div_review.find_element(
+                                By.XPATH, './/a[text()="Показать перевод"]'
+                            ).click()
+                            while translated is False and translate_error is False:
+                                try:
+                                    div_review.find_element(
+                                        By.XPATH, './/span[@style="display: inline;"]/'
+                                                  'span[normalize-space(text())="Переведено"]'
+                                    )
+                                    translated = True
+                                except NoSuchElementException:
+                                    pass
+                                try:
+                                    div_review.find_element(
+                                        By.XPATH, './/span[@style="display: inline;"][contains(text(), "Не удалось перевести")]'
+                                    )
+                                    translate_error = True
+                                except NoSuchElementException:
+                                    pass
+                        except NoSuchElementException:
+                            pass
+
+                        nickname = div_review.find_element(
+                            By.CLASS_NAME, 'bui-avatar-block__title'
+                        ).text
+                        date = div_review.find_element(
+                            By.XPATH, './/div[@class="c-review-block__row"]/span[@class="c-review-block__date"]'
+                        ).text.replace('Время отзыва: ', '')
+
+                        if not translate_error:
+                            positives = div_review.find_elements(
+                                By.XPATH, './/span[text()="Понравилось"]/parent::span/following-sibling::'
+                                          'span[contains(@class, "c-review__body")]'
+                            )
+                        else:
+                            positives = div_review.find_elements(
+                                By.XPATH, './/span[@class="c-review__prefix c-review__prefix--color-green"]'
+                                          '/following-sibling::span[@lang]'
+                            )
+                        match positives:
+                            case []:
+                                positive = ''
+                            case [arg]:
+                                positive = arg.text
+                            case [*args]:
+                                positive = [p for p in args if p.get_attribute('style') == 'display: inline;'][0].text
+                        if positive:
+                            if translate_error or not re.search(r'[А-я]', positive):
+                                positive = self.translate_to_ru(positive)
+
+                        if not translate_error:
+                            negatives = div_review.find_elements(
+                                By.XPATH, './/span[text()="Не понравилось"]/parent::span'
+                                          '/following-sibling::span[contains(@class, "c-review__body")]'
+                            )
+                        else:
+                            negatives = div_review.find_elements(
+                                By.XPATH, './/span[@class="c-review__prefix"]/following-sibling::span[@lang]'
+                            )
+                        match negatives:
+                            case []:
+                                negative = ''
+                            case [arg]:
+                                negative = arg.text
+                            case [*args]:
+                                negative = [p for p in args if p.get_attribute('style') == 'display: inline;'][0].text
+                        if negative:
+                            if translate_error or not re.search(r'[А-я]', negative):
+                                negative = self.translate_to_ru(negative)
+
+                        counter += 1
+                        review_info = {
+                            'author': nickname,
+                            'date': date,
+                            'positive': positive,
+                            'negative': negative
+                        }
+
+                        if negative or positive:
+                            reviews_info[url][len(reviews_info[url]) + 1] = review_info
+                            print(f'№: {counter}, {review_info}')
+                        else:
+                            print(f'№: {counter}, В отзыве отсутствуют негативные или положительные комментарии')
+
+                    try:
+                        self.driver.find_element(By.XPATH, '//a[@class="pagenext"]').click()
+                    except NoSuchElementException:
+                        break
+
+                append_dict_to_txt(reviews_info, filepath)
+                # with open('reviews_example.json', 'w') as f:
+                #     json.dump(reviews_info, f, indent=4, ensure_ascii=False)
+
+                # columns = ('url', 'id', 'author', 'date', 'positive', 'negative')
+                # with open('reviews_example.csv', 'a', encoding='utf-8') as f:
+                #     writer = csv.writer(f, delimiter=';')
+                #     writer.writerow(columns)
+                #     for i, d in reviews_info[url].items():
+                #         if i == 1:
+                #             row_data = [url, i]
+                #         else:
+                #             row_data = [None, i]
+                #         for column in columns[2:]:
+                #             if v := d.get(column):
+                #                 row_data.append(v)
+                #             else:
+                #                 row_data.append(None)
+                #         writer.writerow(row_data)
+                break
+            except:
+                print(traceback.format_exc())
+                if max_retries == retries:
+                    print(f'[ОШИБКА] Попытка {retries}/{max_retries} закончилась неудачно')
+                else:
+                    print(f'[ОШИБКА] Попытка {retries}/{max_retries}')
+                    continue
+            finally:
+                self.driver.quit()
+                if max_retries == retries:
+                    return
 
 
 def main():
