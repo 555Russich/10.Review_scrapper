@@ -4,7 +4,6 @@ import os.path
 import re
 import traceback
 from time import sleep
-from subprocess import CREATE_NO_WINDOW
 
 import undetected_chromedriver.v2 as uc
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
@@ -52,7 +51,12 @@ class Scrapper:
         options.add_argument('--start-maximized')
         options.add_argument('--disable-notifications')
         chrome_service = Service(ChromeDriverManager().install())
-        chrome_service.creationflags = CREATE_NO_WINDOW
+        try:
+            from subprocess import CREATE_NO_WINDOW
+            chrome_service.creationflags = CREATE_NO_WINDOW
+        except ImportError:
+            pass
+        print(chrome_service.creationflags)
         driver = uc.Chrome(
             options=options,
             version_main=104,
@@ -276,7 +280,7 @@ class Scrapper:
 
 
 def main():
-    # Scrapper().scrap_page('https://www.booking.com/hotel/it/residenza-gonfalone.ru.html?label=gen173nr-1DCAEoggI46AdIM1gEaMIBiAEBmAEhuAEZyAEM2AED6AEBiAIBqAIDuALty5KYBsACAdICJDQwZWM2YmZhLTU5NDItNDgxMi05M2I5LTUyMmExNjhhNDBjZNgCBOACAQ&sid=74e702f2aee6c0eeab7fc4bc642824cd&aid=304142&ucfs=1&arphpl=1&dest_id=-126693&dest_type=city&group_adults=2&req_adults=2&no_rooms=1&group_children=0&req_children=0&hpos=4&hapos=4&sr_order=popularity&srpvid=5c0666a902dd010a&srepoch=1661956563&from=searchresults#hotelTmpl')
+    Scrapper().scrap_page('https://www.booking.com/hotel/it/residenza-gonfalone.ru.html?label=gen173nr-1DCAEoggI46AdIM1gEaMIBiAEBmAEhuAEZyAEM2AED6AEBiAIBqAIDuALty5KYBsACAdICJDQwZWM2YmZhLTU5NDItNDgxMi05M2I5LTUyMmExNjhhNDBjZNgCBOACAQ&sid=74e702f2aee6c0eeab7fc4bc642824cd&aid=304142&ucfs=1&arphpl=1&dest_id=-126693&dest_type=city&group_adults=2&req_adults=2&no_rooms=1&group_children=0&req_children=0&hpos=4&hapos=4&sr_order=popularity&srpvid=5c0666a902dd010a&srepoch=1661956563&from=searchresults#hotelTmpl')
     pass
 
 
