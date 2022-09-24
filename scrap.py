@@ -51,24 +51,25 @@ class Scrapper:
         options.add_argument('--start-maximized')
         options.add_argument('--disable-notifications')
         chrome_service = Service(ChromeDriverManager().install())
-        try:
-            from subprocess import CREATE_NO_WINDOW
-            chrome_service.creationflags = CREATE_NO_WINDOW
-        except ImportError:
-            pass
         driver = uc.Chrome(
             options=options,
             version_main=104,
             service=chrome_service
         )
-        print(driver.service.creationflags)
+        try:
+            from subprocess import CREATE_NO_WINDOW
+            driver.service.creationflags = CREATE_NO_WINDOW
+        except ImportError:
+            pass
         self.driver = driver
+        print(self.driver.service.creationflags)
 
     def get_page_with_retries(self, url, retries_get_page=3):
         i = 0
         while True:
             i += 1
             self.get_driver()
+            print(self.driver.service.creationflags)
             self.driver.set_page_load_timeout(self.page_load_time_out)
             try:
                 print(f'Страница загружается... {url=}')
