@@ -56,13 +56,7 @@ class Scrapper:
             version_main=104,
             service=chrome_service
         )
-        try:
-            from subprocess import CREATE_NO_WINDOW
-            driver.service.creationflags = CREATE_NO_WINDOW
-        except ImportError:
-            pass
         self.driver = driver
-        print(self.driver.service.creationflags)
 
     def get_page_with_retries(self, url, retries_get_page=3):
         i = 0
