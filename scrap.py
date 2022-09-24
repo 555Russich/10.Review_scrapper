@@ -7,7 +7,7 @@ from time import sleep
 
 import undetected_chromedriver.v2 as uc
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
@@ -51,6 +51,11 @@ class Scrapper:
         options.add_argument('--start-maximized')
         options.add_argument('--disable-notifications')
         chrome_service = Service(ChromeDriverManager().install())
+        try:
+            from subprocess import CREATE_NO_WINDOW
+            chrome_service.creationflags = CREATE_NO_WINDOW
+        except ImportError:
+            pass
         driver = uc.Chrome(
             options=options,
             version_main=104,
@@ -64,11 +69,6 @@ class Scrapper:
         while True:
             i += 1
             self.get_driver()
-            try:
-                from subprocess import CREATE_NO_WINDOW
-                self.driver.creationflags = CREATE_NO_WINDOW
-            except ImportError:
-                pass
             self.driver.set_page_load_timeout(self.page_load_time_out)
             try:
                 print(f'Страница загружается... {url=}')
