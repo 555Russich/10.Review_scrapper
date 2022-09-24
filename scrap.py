@@ -137,7 +137,7 @@ class Scrapper:
             except NoSuchElementException:
                 pass
 
-            self.driver.find_element(By.XPATH, '//div[@class="hp-featured_reviews-bottom"]/button').click()
+            self.driver.find_element(By.XPATH, '//span[text()="Читать все отзывы"]/parent::button').click()
             counter = 0
             reviews_info = {url: {}}
             while True:
