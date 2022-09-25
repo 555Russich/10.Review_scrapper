@@ -58,23 +58,23 @@ class Scrapper:
         )
         self.driver = driver
 
-    def get_page_with_retries(self, url, retries_get_page=3):
+    def get_page(self, url, retries=3):
         i = 0
         while True:
             i += 1
             self.get_driver()
             self.driver.set_page_load_timeout(self.page_load_time_out)
             try:
-                print(f'Страница загружается... {url=}')
+                print(f'Страница загружается...')
                 self.driver.get(url)
                 break
             except TimeoutException:
-                if retries_get_page == i:
+                if retries == i:
                     print(f'Страница не загрузилась после {i} попыток')
                     return
                 else:
                     print(f'Страница не загрузилась с таймаутом {self.page_load_time_out}.'
-                          f' Попыток осталось: {retries_get_page - i}')
+                          f' Попыток осталось: {retries - i}')
                     self.driver.quit()
 
     def open_google_translate_tab(self):
@@ -123,7 +123,7 @@ class Scrapper:
             retries += 1
             try:
                 create_txt(filepath)
-                self.get_page_with_retries(url, 3)
+                self.get_page(url, 3)
                 self.open_google_translate_tab()
 
                 # accept cookies
@@ -133,6 +133,7 @@ class Scrapper:
                 except NoSuchElementException:
                     pass
 
+                # find "Read all reviews" button
                 try:
                     self.driver.find_element(
                         By.XPATH, '//span[contains(text(), "Читать все отзывы")]/parent::button'
@@ -141,6 +142,7 @@ class Scrapper:
                     self.driver.find_element(
                         By.XPATH, '/html/body/div[3]/div/div[4]/div[1]/div[1]/div/div[18]/div/div[2]/div[9]/div/div/div/button'
                     ).click()
+
                 counter = 0
                 reviews_info = {url: {}}
                 while True:
